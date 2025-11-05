@@ -27,13 +27,10 @@ type alias Params = { a : Int, b : Int }
 
 encryptLetter : Params -> Token -> Letter
 encryptLetter params t =
-    let
-        cipher = encrypt params t.char
-    in
     { idx = t.idx
-    , group = cipher
+    , group = t.char |> Alpha.toStr
     , plain = t.char |> Alpha.toStr
-    , cipher = cipher
+    , cipher = encrypt params t.char
     , guess = Nothing
     }
 

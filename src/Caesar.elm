@@ -18,13 +18,10 @@ createProblem randomInput words =
 
 encryptLetter : Int -> Token -> Letter
 encryptLetter offset t =
-    let
-        cipher = encrypt offset t.char
-    in
     { idx = t.idx
-    , group = cipher
+    , group = t.char |> Alpha.toStr
     , plain = t.char |> Alpha.toStr
-    , cipher = cipher
+    , cipher = encrypt offset t.char
     , guess = Nothing
     }
 

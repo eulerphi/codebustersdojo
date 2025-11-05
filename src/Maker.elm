@@ -10,6 +10,7 @@ import Baconian
 import Token exposing (Token)
 import Nihilist
 import Data
+import Porta
 
 createProblem : Cipher -> RandomInput -> Problem
 createProblem cipher randomInput =
@@ -26,7 +27,7 @@ getCreateProblemFn cipher randomInput =
         Baconian -> Baconian.createProblem
         Caesar -> Caesar.createProblem
         Nihilist -> Nihilist.createProblem
-        _ -> Atbash.createProblem
+        Porta -> Porta.createProblem
 
 randomCreateProblemFn : RandomInput -> (RandomInput -> List (List Token) -> Problem)
 randomCreateProblemFn randomInput =

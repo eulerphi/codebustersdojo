@@ -18,9 +18,9 @@ createProblem randomInput words =
     in
     { cipherType = Nihilist
     , instructions =
-        "Nihilist (Polybius Key = "
+        "Nihilist (polybius key = "
             ++ (Polybius.toKeywordStr params.p)
-            ++ ", Keyword = "
+            ++ ", keyword = "
             ++ (Keyword.toStr params.k)
              ++ ")"
     , words = words |> List.map (\w -> { letters = w |> List.map (encryptLetter params) })

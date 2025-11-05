@@ -14,13 +14,10 @@ createProblem _ words =
 
 encryptLetter : Token -> Letter
 encryptLetter t =
-    let
-        cipher = encrypt t.char
-    in
     { idx = t.idx
-    , group = cipher
+    , group = t.char |> Alpha.toStr
     , plain = t.char |> Alpha.toStr
-    , cipher = cipher
+    , cipher = encrypt t.char
     , guess = Nothing
     }
 

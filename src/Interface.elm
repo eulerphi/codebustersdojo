@@ -65,7 +65,7 @@ type alias RandomInput =
 type alias Word = { letters : List Letter }
 
 allCiphers : Array Cipher
-allCiphers = [Affine, Atbash, Baconian, Caesar, Nihilist] |> Array.fromList
+allCiphers = [Affine, Atbash, Baconian, Caesar, Nihilist, Porta] |> Array.fromList
 
 cipherToString : Cipher -> String
 cipherToString cipher = case cipher of

@@ -1,16 +1,20 @@
 module Alpha exposing
-    (Alpha, eq, fromVal, parse, toChar, toStr, toVal)
+    (Alpha, compare, eq, fromVal, parse, toChar, toStr, toVal,
+    m)
 
 type Alpha = Alpha Char
 
 eq : Alpha -> Alpha -> Bool
-eq (Alpha x) (Alpha y) = x == y
+eq x y = compare x y |> (==) EQ
 
 fromVal : Int -> Alpha
 fromVal idx =
     (modBy 26 idx) + lowerACode
         |> Char.fromCode
         |> Alpha
+
+compare : Alpha -> Alpha -> Order
+compare (Alpha x) (Alpha y) = Basics.compare x y
 
 parse : Char -> Maybe Alpha
 parse c =
@@ -47,3 +51,6 @@ lowerACode = 'a' |> Char.toCode
 
 lowerZCode : Int
 lowerZCode = 'z' |> Char.toCode
+
+m : Alpha
+m = fromVal 12
