@@ -11,6 +11,7 @@ import Token exposing (Token)
 import Nihilist
 import Data
 import Porta
+import Aristocrat
 
 createProblem : Cipher -> RandomInput -> Problem
 createProblem cipher randomInput =
@@ -23,6 +24,7 @@ getCreateProblemFn cipher randomInput =
     case cipher of
         RandomCipher -> randomCreateProblemFn randomInput
         Affine -> Affine.createProblem
+        Aristocrat -> Aristocrat.createProblem
         Atbash -> Atbash.createProblem
         Baconian -> Baconian.createProblem
         Caesar -> Caesar.createProblem

@@ -2,7 +2,7 @@ module Interface exposing (..)
 
 import Array exposing (Array)
 
-type Cipher = RandomCipher | Affine | Atbash | Baconian | Caesar | Nihilist | Porta
+type Cipher = RandomCipher | Affine | Aristocrat | Atbash | Baconian | Caesar | Nihilist | Porta
 
 type alias Letter =
     { idx : Int
@@ -57,9 +57,7 @@ type alias Problem =
 type alias RandomInput =
     { a : Float
     , b : Float
-    , c : Float
-    , d : Float
-    , e : Float
+    , hundred : List Float
     }
 
 type alias Word = { letters : List Letter }
@@ -71,6 +69,7 @@ cipherToString : Cipher -> String
 cipherToString cipher = case cipher of
     RandomCipher -> "Random"
     Affine -> "Affine"
+    Aristocrat -> "Aristocrat"
     Atbash -> "Atbash"
     Baconian -> "Baconian"
     Caesar -> "Caesar"

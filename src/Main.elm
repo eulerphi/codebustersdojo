@@ -32,14 +32,12 @@ type alias ReadyState =
 
 generateRandomInput : Random.Generator RandomInput
 generateRandomInput =
-    Random.list 5 (Random.float 0 1)
+    Random.list 102 (Random.float 0 1)
         |> Random.map Array.fromList
         |> Random.map (\xs ->
             { a = xs |> Array.get 0 |> Maybe.withDefault 0
             , b = xs |> Array.get 1 |> Maybe.withDefault 0
-            , c = xs |> Array.get 2 |> Maybe.withDefault 0
-            , d = xs |> Array.get 3 |> Maybe.withDefault 0
-            , e = xs |> Array.get 4 |> Maybe.withDefault 0
+            , hundred = xs |> Array.slice 2 102 |> Array.toList
             })
 
 init : Float -> (Model, Cmd Msg)

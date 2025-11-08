@@ -41,7 +41,7 @@ encrypt params char =
         |> Alpha.toStr
 
 valuesOfA : Array Int
-valuesOfA = Array.fromList [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 15]
+valuesOfA = Array.fromList [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]
 
 maxValueOfB : Int
 maxValueOfB = 25
