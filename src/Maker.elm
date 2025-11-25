@@ -13,11 +13,17 @@ import Data
 import Porta
 import Aristocrat
 
-createProblem : Cipher -> RandomInput -> Problem
-createProblem cipher randomInput =
-    (getCreateProblemFn cipher randomInput)
-        randomInput 
-        (randomInput.a |> Data.randomQuote |> Token.tokenize)
+createProblem : ProblemInput -> RandomInput -> Problem
+createProblem problemInput randomInput =
+    let
+        fn = getCreateProblemFn problemInput.cipherType randomInput
+
+        q = if problemInput.hardMode then
+                randomInput.a |> Data.randomLongQuote |> Token.tokenize
+            else
+                randomInput.a |> Data.randomQuote |> Token.tokenize
+    in
+    fn randomInput q
 
 getCreateProblemFn : Cipher -> RandomInput -> (RandomInput -> List (List Token) -> Problem)
 getCreateProblemFn cipher randomInput =

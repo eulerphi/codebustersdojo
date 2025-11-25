@@ -23,6 +23,7 @@ type Model
 
 type alias ReadyState =
     { cipherType : Cipher
+    , hardMode : Bool
     , instructions : String
     , words : List Word
     , selected : Letter
@@ -41,10 +42,10 @@ generateRandomInput =
             })
 
 init : Float -> (Model, Cmd Msg)
-init _ = ( Loading, newProblemCmd RandomCipher )
+init _ = ( Loading, newProblemCmd { cipherType = RandomCipher, hardMode = False } )
 
-newProblemCmd : Cipher -> Cmd Msg
-newProblemCmd cipher = Random.generate (NewProblem cipher) generateRandomInput
+newProblemCmd : ProblemInput -> Cmd Msg
+newProblemCmd input = Random.generate (NewProblem input) generateRandomInput
 
 main : Program Float Model Msg
 main = Browser.element { init = init , subscriptions = subscriptions , update = update , view = view }
@@ -55,10 +56,11 @@ main = Browser.element { init = init , subscriptions = subscriptions , update = 
 type Msg
     = Reset
     | Submit
-    | InitNewProblem Cipher
-    | NewProblem Cipher RandomInput
-    | Select Letter
+    | InitNewProblem ProblemInput
     | KeyDown Int
+    | NewProblem ProblemInput RandomInput
+    | Select Letter
+    | ToggleHardMode Bool
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -70,21 +72,22 @@ update msg m =
     Reset -> case m of
         Loading -> (m, Cmd.none)
         Ready s ->
-            (Ready { s | words = mutate clearGuess s.words, attempts = 0 }, Cmd.none)
+            (Ready { s | words = mutate clearGuess s.words }, Cmd.none)
 
     KeyDown code -> case m of
         Loading -> (m, Cmd.none)
         Ready s -> (Ready (code |> toKeyOp |> onKeyDown s), Cmd.none)
 
-    InitNewProblem cipher ->
-        (Loading, Random.generate (NewProblem cipher) generateRandomInput)
+    InitNewProblem input ->
+        (Loading, Random.generate (NewProblem input) generateRandomInput)
 
-    NewProblem cipher randomInput ->
+    NewProblem problemInput randomInput ->
         let
-            p = Maker.createProblem cipher randomInput
+            p = Maker.createProblem problemInput randomInput
         in
         (Ready
             { cipherType = p.cipherType
+            , hardMode = problemInput.hardMode
             , instructions = p.instructions
             , words = p.words
             , selected = p.words
@@ -113,6 +116,16 @@ update msg m =
         Loading -> (m, Cmd.none)
         Ready s -> ( Ready { s | selected = idx }, Cmd.none)
 
+    ToggleHardMode checked -> case m of
+        Loading -> ( Loading
+                   , Random.generate
+                        (NewProblem { cipherType = RandomCipher, hardMode = checked })
+                        generateRandomInput)
+        Ready s -> ( Loading
+                   , Random.generate
+                        (NewProblem { cipherType = s.cipherType, hardMode = checked })
+                        generateRandomInput)
+
 
 -- ############
 -- KEYOP
@@ -139,7 +152,9 @@ onKeyDownInner s guess_ =
     let
         setIfMatch : Letter -> Letter
         setIfMatch l =
-            if s.selected.group == l.group then
+            if s.selected.idx == l.idx then
+                l |> setGuess guess_
+            else if not s.hardMode && s.selected.group == l.group then
                 l |> setGuess guess_
             else
                 l
@@ -171,7 +186,7 @@ viewMain : ReadyState -> Html Msg
 viewMain s =
     Html.main_ []
         [ Html.div [ Attrs.class "navBar"]
-            (viewNavBarButtons s)
+            ((viewHardModeToggle s) :: (viewNavBarButtons s))
         , Html.div [ Attrs.class "topContainer"]
             [ Html.div [ Attrs.class "instructionsContainer" ] [ Html.text s.instructions ]
             , Html.div [ Attrs.class "problemContainer" ] (s.words |> List.map (viewWord s))
@@ -180,10 +195,27 @@ viewMain s =
             ]
         ]
 
+viewHardModeToggle : ReadyState -> Html Msg
+viewHardModeToggle s =
+    Html.div
+        [Attrs.class "checkbox-wrapper-14"]
+        [ Html.input
+            [ Attrs.type_ "checkbox"
+            , Attrs.id "hardModeToggle"
+            , Attrs.class "switch"
+            , Attrs.checked s.hardMode
+            , Html.Events.onCheck ToggleHardMode
+            ]
+            []
+        , Html.label [Attrs.for "hardModeToggle"] [ Html.text "Hard Mode"]
+        ]
+
 viewNavBarButtons : ReadyState -> List (Html Msg)
-viewNavBarButtons _ =
+viewNavBarButtons s =
     allCiphers
-        |> Array.map (\c -> Html.button [InitNewProblem c |> Html.Events.onClick] [ Html.text ("New " ++ cipherToString c)])
+        |> Array.map (\c -> Html.button
+            [InitNewProblem { cipherType = c, hardMode = s.hardMode } |> Html.Events.onClick]
+            [ Html.text ("New " ++ cipherToString c)])
         |> Array.toList
 
 viewWord : ReadyState -> Word -> Html Msg
@@ -197,7 +229,7 @@ viewLetter s l =
         selectedClass =
             if s.selected.idx == l.idx then
                 "selected"
-            else if s.selected.group == l.group then
+            else if not s.hardMode && s.selected.group == l.group then
                 "ingroup"
             else
                 ""
