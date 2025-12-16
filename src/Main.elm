@@ -13,6 +13,8 @@ import Maker
 import Platform.Cmd as Cmd
 import Platform.Cmd as Cmd
 import Random
+import Task
+import Time
 
 -- ##########
 -- MODEL
@@ -33,6 +35,8 @@ type alias ReadyState =
     , selected : Selected
     , table : Maybe FrequencyTable
     , attempts : Int
+    , startTime : Maybe Time.Posix
+    , endTime : Maybe Time.Posix
     , solved : Bool
     }
 
@@ -65,6 +69,8 @@ type Msg
     | KeyDown Int
     | NewProblem ProblemInput RandomInput
     | Select Selected
+    | SetStartTime Time.Posix
+    | SetEndTime Time.Posix
     | ToggleHardMode Bool
 
 subscriptions : Model -> Sub Msg
@@ -103,9 +109,11 @@ update msg m =
                 |> ProblemLetter
             , table = p.table
             , attempts = 0
+            , startTime = Nothing
+            , endTime = Nothing
             , solved = False
             }
-        , Cmd.none)
+        , Task.perform SetStartTime Time.now)
 
     Submit -> case m of
         Loading -> (m, Cmd.none)
@@ -115,12 +123,21 @@ update msg m =
                     List.concatMap (\w -> w.letters) s.words
                     |> List.all isGuessCorrect
             in
-            (Ready { s | solved = solved, attempts = s.attempts + 1 }, Cmd.none)
+            (Ready { s | solved = solved, attempts = s.attempts + 1 }
+            , if solved then Task.perform SetEndTime Time.now else Cmd.none)
         
 
     Select selected -> case m of
         Loading -> (m, Cmd.none)
         Ready s -> ( Ready { s | selected = selected }, Cmd.none)
+
+    SetStartTime p -> case m of
+        Loading -> (m, Cmd.none)
+        Ready s -> ( Ready { s | startTime = Just p }, Cmd.none)
+
+    SetEndTime p -> case m of
+        Loading -> (m, Cmd.none)
+        Ready s -> ( Ready { s | endTime = Just p }, Cmd.none)
 
     ToggleHardMode checked -> case m of
         Loading -> ( Loading
@@ -396,8 +413,18 @@ viewButtons s =
 
 viewInfo : ReadyState -> List (Html Msg)
 viewInfo s =
+    let
+        durationInSecs =
+            Maybe.map2
+                (\start end -> ((Time.posixToMillis end) - (Time.posixToMillis start)) // 1000)
+                s.startTime
+                s.endTime
+            |> Maybe.withDefault 0
+            |> String.fromInt
+    in
+
     if s.solved then
-        [ "🎉🎉 Solved! (Attempts: " ++ (s.attempts |> String.fromInt) ++ ")" |> Html.text ]
+        [ "🎉🎉 Solved! (Attempts: " ++ (s.attempts |> String.fromInt) ++ ", Time: " ++ (durationInSecs) ++ " seconds)" |> Html.text ]
     else if s.attempts > 0
         then
             [ "Not quite. (Attempts: " ++ (s.attempts |> String.fromInt) ++ ")" |> Html.text ]
