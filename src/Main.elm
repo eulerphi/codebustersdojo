@@ -15,6 +15,7 @@ import Platform.Cmd as Cmd
 import Random
 import Task
 import Time
+import TimeEx
 
 -- ##########
 -- MODEL
@@ -414,17 +415,12 @@ viewButtons s =
 viewInfo : ReadyState -> List (Html Msg)
 viewInfo s =
     let
-        durationInSecs =
-            Maybe.map2
-                (\start end -> ((Time.posixToMillis end) - (Time.posixToMillis start)) // 1000)
-                s.startTime
-                s.endTime
-            |> Maybe.withDefault 0
-            |> String.fromInt
+        durationStr =
+            Maybe.map2 TimeEx.durationStr s.startTime s.endTime
+            |> Maybe.withDefault ""
     in
-
     if s.solved then
-        [ "🎉🎉 Solved! (Attempts: " ++ (s.attempts |> String.fromInt) ++ ", Time: " ++ (durationInSecs) ++ " seconds)" |> Html.text ]
+        [ "🎉🎉 Solved! (Attempts: " ++ (s.attempts |> String.fromInt) ++ ", Time: " ++ durationStr ++ ")" |> Html.text ]
     else if s.attempts > 0
         then
             [ "Not quite. (Attempts: " ++ (s.attempts |> String.fromInt) ++ ")" |> Html.text ]
