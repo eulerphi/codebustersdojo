@@ -23,6 +23,7 @@ createK1 randomInput =
     randomInput.a
         |> Data.randomKeyword
         |> Token.tokenizeWord
+        |> List.filterMap Token.tryGetTokenData
         |> List.map (\t -> t.char |> Alpha.toVal)
         |> (\xs -> xs ++ (List.range 0 25))
         |> ListEx.dedupe
@@ -59,13 +60,13 @@ list (Key d) =
                 plainVal = DictEx.getOrZero idx reverseMap
                 cipherVal = idx
             in
-            
-            { idx = idx
-            , group = Alpha.fromValToStr plainVal
-            , plain = Alpha.fromValToStr plainVal
-            , cipher = Alpha.fromValToStr cipherVal
-            , guess = Nothing
-            })
+            Interface.Interactive
+                { idx = idx
+                , group = Alpha.fromValToStr plainVal
+                , plain = Alpha.fromValToStr plainVal
+                , cipher = Alpha.fromValToStr cipherVal
+                , guess = Nothing
+                })
 
 allMappings : List Int -> List (Dict Int Int)
 allMappings cs =

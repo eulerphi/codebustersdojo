@@ -2,6 +2,8 @@ module Interface exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Extra
+import Token exposing (Token(..))
 
 type Cipher
     = RandomCipher
@@ -14,7 +16,11 @@ type Cipher
     | Nihilist
     | Porta
 
-type alias Letter =
+type Letter
+    = Interactive LetterData
+    | Punctuation { char : String }
+
+type alias LetterData =
     { idx : Int
     , group : String
     , plain : String
@@ -22,7 +28,7 @@ type alias Letter =
     , guess : Maybe String
     }
 
-invalidLetter : Letter
+invalidLetter : LetterData
 invalidLetter =
     { idx = -1
     , group = ""
@@ -31,32 +37,61 @@ invalidLetter =
     , guess = Nothing
     }
 
-type alias Selection =
-    { idx : Int
-    , group : String
-    }
-
-clearGuess : Letter -> Letter
+clearGuess : LetterData -> LetterData
 clearGuess = setGuess Nothing
 
-setGuess : Maybe String -> Letter -> Letter
-setGuess guess_ l = { l | guess = guess_ }
+isGuessCorrect : Letter -> Bool
+isGuessCorrect l =
+    case l of
+        Interactive d ->
+            case d.guess of
+                Just g -> Extra.equalsIgnoreCase d.plain g
+                Nothing -> False
+        Punctuation _ -> True
 
-getByIdx : Int -> List Word -> Maybe Letter
+setGuess : Maybe String -> LetterData -> LetterData
+setGuess guess_ d = { d | guess = guess_}
+
+tryGetLetterData : Letter -> Maybe LetterData
+tryGetLetterData l =
+    case l of
+        Interactive d -> Just d
+        Punctuation _ -> Nothing
+
+getByIdx : Int -> List Word -> Maybe LetterData
 getByIdx idx words =
     case words of
         [] -> Nothing
-        x::xs -> case x.letters |> List.filter (\l -> l.idx == idx) |> List.head of
-            Nothing -> getByIdx idx xs
-            Just l -> Just l
+        w::ws -> case (getByIdxInWord idx w.letters) of
+            Nothing -> getByIdx idx ws
+            Just d -> Just d
 
-getSelection : Letter -> Selection
-getSelection l =
-    { idx = l.idx, group = l.group }
+getByIdxInWord : Int -> List Letter -> Maybe LetterData
+getByIdxInWord idx letters =
+    case letters of
+        [] -> Nothing
+        l::ls -> case l of
+            Interactive d ->
+                if d.idx == idx then
+                    Just d
+                else
+                    getByIdxInWord idx ls
+            Punctuation _ -> 
+                getByIdxInWord idx ls
 
-mutate : (Letter -> Letter) -> List Word -> List Word
+mutate : (LetterData -> LetterData) -> List Word -> List Word
 mutate fn words =
-    words |> List.map (\w -> { w | letters = w.letters |> List.map fn })
+    words |> List.map (mutateWord fn)
+
+mutateWord : (LetterData -> LetterData) -> Word -> Word
+mutateWord fn w =
+    { w | letters = w.letters |> List.map (mutateLetter fn) }
+
+mutateLetter : (LetterData -> LetterData) -> Letter -> Letter
+mutateLetter fn l =
+    case l of
+        Interactive d -> Interactive (fn d)
+        Punctuation d -> Punctuation d
 
 type alias Problem =
     { cipherType : Cipher

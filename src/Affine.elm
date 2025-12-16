@@ -5,7 +5,7 @@ import Array exposing (Array)
 import Common exposing (..)
 import Interface exposing (..)
 import Extra
-import Token exposing (Token)
+import Token exposing (Token(..))
 
 createProblem : RandomInput -> List (List Token) -> Problem
 createProblem randomInput words =
@@ -28,12 +28,17 @@ type alias Params = { a : Int, b : Int }
 
 encryptLetter : Params -> Token -> Letter
 encryptLetter params t =
-    { idx = t.idx
-    , group = t.char |> Alpha.toStr
-    , plain = t.char |> Alpha.toStr
-    , cipher = encrypt params t.char
-    , guess = Nothing
-    }
+    case t of
+        Token.Interactive d ->
+            Interface.Interactive
+                { idx = d.idx
+                , group = d.char |> Alpha.toStr
+                , plain = d.char |> Alpha.toStr
+                , cipher = encrypt params d.char
+                , guess = Nothing
+                }
+        Token.Punctuation d ->
+            Interface.Punctuation d
 
 encrypt : Params -> Alpha -> String
 encrypt params char =

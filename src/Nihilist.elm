@@ -6,7 +6,7 @@ import Data
 import Interface exposing (..)
 import Keyword exposing (Keyword)
 import Polybius exposing (Polybius)
-import Token exposing (Token)
+import Token exposing (Token, TokenData)
 
 createProblem : RandomInput -> List (List Token) -> Problem
 createProblem randomInput words =
@@ -29,16 +29,21 @@ createProblem randomInput words =
 
 encryptLetter : Params -> Token -> Letter
 encryptLetter params t =
-    { idx = t.idx
-    , group = (Keyword.getAt params.k t.idx |> Alpha.toStr)
-        ++ "--"
-        ++ (Alpha.toStr t.char)
-    , plain = t.char |> Alpha.toStr
-    , cipher = encrypt params t
-    , guess = Nothing
-    }
+    case t of
+        Token.Interactive d ->
+            Interface.Interactive
+                { idx = d.idx
+                , group = (Keyword.getAt params.k d.idx |> Alpha.toStr)
+                    ++ "--"
+                    ++ (Alpha.toStr d.char)
+                , plain = d.char |> Alpha.toStr
+                , cipher = encrypt params d
+                , guess = Nothing
+                }
+        Token.Punctuation d ->
+            Interface.Punctuation d
 
-encrypt : Params -> Token -> String
+encrypt : Params -> TokenData -> String
 encrypt params t =
     Polybius.encode params.p params.k t
         |> String.fromInt

@@ -116,6 +116,16 @@ main {
     row-gap: 20px;
 }
 
+.punctuation {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: large;
+    height: 28px;
+    justify-items: center;
+    line-height: 24px;
+}
+
 .resetBtn {
     background-color: orange;
     color: white;

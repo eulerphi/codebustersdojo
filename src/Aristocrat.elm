@@ -43,12 +43,17 @@ createK1Problem randomInput words =
 
 encryptLetter : Params -> Token -> Letter
 encryptLetter params t =
-    { idx = t.idx
-    , group = t.char |> Alpha.toStr
-    , plain = t.char |> Alpha.toStr
-    , cipher = encrypt params t.char
-    , guess = Nothing
-    }
+    case t of
+        Token.Interactive d ->
+            Interface.Interactive
+                { idx = d.idx
+                , group = d.char |> Alpha.toStr
+                , plain = d.char |> Alpha.toStr
+                , cipher = encrypt params d.char
+                , guess = Nothing
+                }
+        Token.Punctuation d ->
+            Interface.Punctuation d
 
 encrypt : Params -> Alpha -> String
 encrypt params char =

@@ -5,7 +5,7 @@ import Alpha exposing (Alpha)
 import Extra
 import Keyword exposing (Keyword)
 import ListEx
-import Token exposing (Token)
+import Token exposing (TokenData)
 
 type Polybius = Polybius (String, List Alpha)
 
@@ -36,7 +36,7 @@ defaultPolybius =
         |> List.map Alpha.fromVal
         |> (\cs -> Polybius("ABC", cs))
 
-encode : Polybius -> Keyword -> Token -> Int
+encode : Polybius -> Keyword -> TokenData -> Int
 encode p k t =
     let
         kVal = Keyword.getAt k t.idx

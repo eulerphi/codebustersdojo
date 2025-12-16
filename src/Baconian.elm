@@ -15,12 +15,17 @@ createProblem _ words =
 
 encryptLetter : Token -> Letter
 encryptLetter t =
-    { idx = t.idx
-    , group = t.char |> Alpha.toStr
-    , plain = t.char |> Alpha.toStr
-    , cipher = encrypt t.char
-    , guess = Nothing
-    }
+    case t of
+        Token.Interactive d ->
+            Interface.Interactive
+                { idx = d.idx
+                , group = d.char |> Alpha.toStr
+                , plain = d.char |> Alpha.toStr
+                , cipher = encrypt d.char
+                , guess = Nothing
+                }
+        Token.Punctuation d ->
+            Interface.Punctuation d
 
 encrypt : Alpha -> String
 encrypt char =

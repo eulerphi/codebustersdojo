@@ -4,7 +4,6 @@ import Array
 import Browser
 import Browser.Events
 import DictEx
-import Extra
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events
@@ -23,8 +22,8 @@ type Model
     | Ready ReadyState
 
 type Selected
-    = ProblemLetter Letter
-    | TableLetter Letter
+    = ProblemLetter LetterData
+    | TableLetter LetterData
 
 type alias ReadyState =
     { cipherType : Cipher
@@ -97,8 +96,9 @@ update msg m =
             , instructions = p.instructions
             , words = p.words
             , selected = p.words
+                |> List.concatMap (\w -> w.letters)
+                |> List.filterMap tryGetLetterData
                 |> List.head
-                |> Maybe.andThen (\w -> w.letters |> List.head)
                 |> Maybe.withDefault invalidLetter
                 |> ProblemLetter
             , table = p.table
@@ -111,11 +111,9 @@ update msg m =
         Loading -> (m, Cmd.none)
         Ready s ->
             let
-                solved = s.words |> List.all (\w ->
-                    w.letters |> List.all (\l ->
-                        l.guess
-                            |> Maybe.map (Extra.equalsIgnoreCase l.plain)
-                            |> Maybe.withDefault False))
+                solved =
+                    List.concatMap (\w -> w.letters) s.words
+                    |> List.all isGuessCorrect
             in
             (Ready { s | solved = solved, attempts = s.attempts + 1 }, Cmd.none)
         
@@ -174,37 +172,37 @@ onKeyDown s op =
 onKeyDownInner : ReadyState -> Maybe String -> ReadyState
 onKeyDownInner s guess_ =
     let
-        setProblemLetterIfMatch : Letter -> Letter
-        setProblemLetterIfMatch l =
+        setProblemLetterIfMatch : LetterData -> LetterData
+        setProblemLetterIfMatch d =
             case s.selected of
                 ProblemLetter selected ->
-                    if selected.idx == l.idx then
-                        l |> setGuess guess_
-                    else if not s.hardMode && selected.group == l.group then
-                        l |> setGuess guess_
+                    if selected.idx == d.idx then
+                        d |> setGuess guess_
+                    else if not s.hardMode && selected.group == d.group then
+                        d |> setGuess guess_
                     else
-                        l
+                        d
                 TableLetter selected ->
-                    if not s.hardMode && selected.group == l.group then
-                        l |> setGuess guess_
+                    if not s.hardMode && selected.group == d.group then
+                        d |> setGuess guess_
                     else
-                        l
+                        d
 
-        setTableLetterIfMatch : Letter -> Letter
-        setTableLetterIfMatch l =
+        setTableLetterIfMatch : LetterData -> LetterData
+        setTableLetterIfMatch d =
             case s.selected of
                 ProblemLetter selected ->
-                    if not s.hardMode && selected.group == l.group then
-                        l |> setGuess guess_
+                    if not s.hardMode && selected.group == d.group then
+                        d |> setGuess guess_
                     else
-                        l
+                        d
                 TableLetter selected ->
-                    if selected.idx == l.idx then
-                        l |> setGuess guess_
-                    else if not s.hardMode && selected.group == l.group then
-                        l |> setGuess guess_
+                    if selected.idx == d.idx then
+                        d |> setGuess guess_
+                    else if not s.hardMode && selected.group == d.group then
+                        d |> setGuess guess_
                     else
-                        l
+                        d
         
         words_ = mutate setProblemLetterIfMatch s.words
         table_ = s.table
@@ -281,6 +279,12 @@ viewWord s w =
 
 viewLetter : ReadyState -> Letter -> Html Msg
 viewLetter s l =
+    case l of
+        Interactive d -> viewInteractiveLetter s d 
+        Punctuation d -> viewPunctuation s d.char
+
+viewInteractiveLetter : ReadyState -> LetterData -> Html Msg
+viewInteractiveLetter s l =
     let
         selectedClass =
             case s.selected of
@@ -309,25 +313,36 @@ viewLetter s l =
             ]
         ]
 
+viewPunctuation : ReadyState -> String -> Html Msg
+viewPunctuation _ char =
+    Html.td []
+        [ Html.div [ Attrs.class "letterContainer"]
+            [ Html.div [ Attrs.class "punctuation"] [ Html.text char ]
+            , Html.div [] []
+            ]
+        ]
+
 viewFrequencyTable : ReadyState -> Html Msg
 viewFrequencyTable s =
     case s.table of
         Nothing -> Html.div [] []
         Just t ->
             let
-                topRow = t.mappings |> List.map (\l ->
+                ms = t.mappings |> List.filterMap tryGetLetterData
+
+                topRow = ms |> List.map (\l ->
                     Html.td
                         [ Attrs.class "pt"]
                         [ Html.text l.cipher])
 
-                midRow = t.mappings |> List.map (\l ->
+                midRow = ms |> List.map (\l ->
                     Html.td
                         []
                         [DictEx.getOrZero l.cipher t.frequencies.cipher
                             |> String.fromInt
                             |> Html.text])
 
-                botRow = t.mappings |> List.map (\l ->
+                botRow = ms |> List.map (\l ->
                     let
                         selectedClass =
                             case s.selected of

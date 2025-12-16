@@ -19,12 +19,17 @@ createProblem randomInput words =
 
 encryptLetter : Int -> Token -> Letter
 encryptLetter offset t =
-    { idx = t.idx
-    , group = t.char |> Alpha.toStr
-    , plain = t.char |> Alpha.toStr
-    , cipher = encrypt offset t.char
-    , guess = Nothing
-    }
+    case t of
+        Token.Interactive d ->
+            Interface.Interactive
+                { idx = d.idx
+                , group = d.char |> Alpha.toStr
+                , plain = d.char |> Alpha.toStr
+                , cipher = encrypt offset d.char
+                , guess = Nothing
+                }
+        Token.Punctuation d ->
+            Interface.Punctuation d
 
 encrypt : Int -> Alpha -> String
 encrypt offset char =
