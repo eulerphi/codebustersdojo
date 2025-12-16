@@ -1,6 +1,5 @@
 module Alpha exposing
-    (Alpha, compare, eq, fromVal, parse, toChar, toStr, toVal,
-    m)
+    (Alpha, compare, eq, fromVal, fromValToStr, parse, toChar, toStr, toVal, m)
 
 type Alpha = Alpha Char
 
@@ -12,6 +11,9 @@ fromVal idx =
     (modBy 26 idx) + lowerACode
         |> Char.fromCode
         |> Alpha
+
+fromValToStr : Int -> String
+fromValToStr val = val |> fromVal |> toStr
 
 compare : Alpha -> Alpha -> Order
 compare (Alpha x) (Alpha y) = Basics.compare x y

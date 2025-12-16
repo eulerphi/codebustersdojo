@@ -1,16 +1,41 @@
-module Key exposing (Key, create, encode)
+module Key exposing (Key, create, createK1, encode, list)
 
 import Alpha exposing (Alpha)
+import Data
 import Dict exposing (Dict)
-import Interface exposing (RandomInput)
+import DictEx
 import Extra
+import Interface exposing (Letter, RandomInput)
 import ListEx
+import Token
 
 type Key = Key (Dict Int Int)
 
 create : RandomInput -> Key
 create randomInput =
-    createHelper randomInput.hundred (List.range 0 25) Dict.empty
+    List.range 0 25
+        |> ListEx.shuffle randomInput.hundred
+        |> Maybe.withDefault (List.range 0 25)
+        |> createHelper randomInput
+
+createK1 : RandomInput -> Key
+createK1 randomInput =
+    randomInput.a
+        |> Data.randomKeyword
+        |> Token.tokenizeWord
+        |> List.map (\t -> t.char |> Alpha.toVal)
+        |> (\xs -> xs ++ (List.range 0 25))
+        |> ListEx.dedupe
+        |> createHelper randomInput
+
+createHelper : RandomInput -> List Int -> Key
+createHelper randomInput shuffled =
+    shuffled
+        |> allMappings
+        |> (\ms ->
+            ListEx.itemAt
+                (Extra.randomIdx randomInput.a (List.length ms))
+                ms)
         |> Maybe.withDefault (Dict.empty)
         |> Key
 
@@ -21,17 +46,43 @@ encode plainText (Key d) =
         |> Maybe.withDefault 0
         |> Alpha.fromVal
 
-createHelper : List Float -> List Int -> Dict Int Int -> Maybe (Dict Int Int)
-createHelper randoms remaining output =
-    if List.isEmpty remaining then
-        Just output
+list : Key -> List Letter
+list (Key d) =
+    let
+        reverseMap = Dict.toList d
+            |> List.map (\(k, v) -> (v, k))
+            |> Dict.fromList
+    in
+    List.range 0 25
+        |> List.map (\idx ->
+            let
+                plainVal = DictEx.getOrZero idx reverseMap
+                cipherVal = idx
+            in
+            
+            { idx = idx
+            , group = Alpha.fromValToStr plainVal
+            , plain = Alpha.fromValToStr plainVal
+            , cipher = Alpha.fromValToStr cipherVal
+            , guess = Nothing
+            })
+
+allMappings : List Int -> List (Dict Int Int)
+allMappings cs =
+    List.range 0 25
+    |> List.filterMap (\idx -> tryCreateAt idx cs)
+
+tryCreateAt : Int -> List Int -> Maybe (Dict Int Int)
+tryCreateAt idx ps =
+    let
+        cs = (List.range idx 25) ++ (List.range 0 (idx - 1))
+        mappings = List.map2 Tuple.pair ps cs
+    in
+    if List.all isValidSubstitution mappings then
+        Just (Dict.fromList mappings)
     else
-        case randoms of
-            [] -> Nothing
-            r::rs -> Extra.randomIdx r (List.length remaining)
-                |> (\idx -> ListEx.partitionAt idx remaining)
-                |> Maybe.andThen (\(before, x, after) ->
-                    createHelper
-                        rs
-                        (before ++ after)
-                        (Dict.insert x (Dict.size output) output))
+        Nothing
+
+isValidSubstitution : (Int, Int) -> Bool
+isValidSubstitution (p, c) =
+    p /= c

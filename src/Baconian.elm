@@ -10,6 +10,7 @@ createProblem _ words =
     { cipherType = Baconian
     , instructions = "Baconian"
     , words = words |> List.map (\w -> { letters = w |> List.map encryptLetter })
+    , table = Nothing
     }
 
 encryptLetter : Token -> Letter

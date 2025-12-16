@@ -5,9 +5,14 @@ import Extra
 
 randomKeyword : Float -> String
 randomKeyword r =
-    Extra.randomIdx r (Array.length keywords)
-        |> (\i -> Array.get i keywords)
-        |> Maybe.withDefault "key"
+    let
+        k = Extra.randomIdx r (Array.length keywords)
+            |> (\i -> Array.get i keywords)
+            |> Maybe.withDefault "key"
+
+        -- _ = Debug.log "keyword: " k
+    in
+    k
 
 randomQuote : Float -> String
 randomQuote r =

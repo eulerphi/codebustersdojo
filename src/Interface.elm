@@ -1,11 +1,13 @@
 module Interface exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 
 type Cipher
     = RandomCipher
     | Affine
     | Aristocrat
+    | AristocratK1
     | Atbash
     | Baconian
     | Caesar
@@ -60,11 +62,22 @@ type alias Problem =
     { cipherType : Cipher
     , instructions : String
     , words : List Word
+    , table : Maybe FrequencyTable
     }
 
 type alias ProblemInput =
     { cipherType : Cipher
     , hardMode : Bool
+    }
+
+type alias Frequencies =
+    { plain : Dict String Int
+    , cipher : Dict String Int
+    }
+
+type alias FrequencyTable =
+    { mappings : List Letter
+    , frequencies : Frequencies
     }
 
 type alias RandomInput =
@@ -76,13 +89,14 @@ type alias RandomInput =
 type alias Word = { letters : List Letter }
 
 allCiphers : Array Cipher
-allCiphers = [Affine, Aristocrat, Atbash, Baconian, Caesar, Nihilist, Porta] |> Array.fromList
+allCiphers = [Affine, Aristocrat, AristocratK1, Atbash, Baconian, Caesar, Nihilist, Porta] |> Array.fromList
 
 cipherToString : Cipher -> String
 cipherToString cipher = case cipher of
     RandomCipher -> "Random"
     Affine -> "Affine"
     Aristocrat -> "Aristocrat"
+    AristocratK1 -> "Aristocrat K1"
     Atbash -> "Atbash"
     Baconian -> "Baconian"
     Caesar -> "Caesar"

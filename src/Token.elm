@@ -1,4 +1,4 @@
-module Token exposing (Token, tokenize)
+module Token exposing (Token, tokenize, tokenizeWord)
 
 import Alpha exposing (Alpha)
 
@@ -10,6 +10,10 @@ tokenize str = str
     |> List.filter (\c -> Char.isAlpha c || c == ' ')
     |> List.map Char.toUpper
     |> (\input -> tokenizeHelper input 0 [] [])
+
+tokenizeWord : String -> List Token
+tokenizeWord str =
+    tokenize str |> List.head |> Maybe.withDefault [] 
 
 tokenizeHelper : List Char -> Int -> List Token -> List (List Token) -> List (List Token)
 tokenizeHelper input currentIdx currentWord output =

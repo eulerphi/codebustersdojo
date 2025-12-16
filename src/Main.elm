@@ -3,16 +3,17 @@ module Main exposing (..)
 import Array
 import Browser
 import Browser.Events
+import DictEx
+import Extra
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events
+import Interface exposing (..)
+import Json.Decode as Decode
 import Maker
 import Platform.Cmd as Cmd
-import Json.Decode as Decode
-import Interface exposing (..)
-import Random
 import Platform.Cmd as Cmd
-import Extra
+import Random
 
 -- ##########
 -- MODEL
@@ -21,12 +22,17 @@ type Model
     = Loading
     | Ready ReadyState
 
+type Selected
+    = ProblemLetter Letter
+    | TableLetter Letter
+
 type alias ReadyState =
     { cipherType : Cipher
     , hardMode : Bool
     , instructions : String
     , words : List Word
-    , selected : Letter
+    , selected : Selected
+    , table : Maybe FrequencyTable
     , attempts : Int
     , solved : Bool
     }
@@ -59,7 +65,7 @@ type Msg
     | InitNewProblem ProblemInput
     | KeyDown Int
     | NewProblem ProblemInput RandomInput
-    | Select Letter
+    | Select Selected
     | ToggleHardMode Bool
 
 subscriptions : Model -> Sub Msg
@@ -94,6 +100,8 @@ update msg m =
                 |> List.head
                 |> Maybe.andThen (\w -> w.letters |> List.head)
                 |> Maybe.withDefault invalidLetter
+                |> ProblemLetter
+            , table = p.table
             , attempts = 0
             , solved = False
             }
@@ -112,9 +120,9 @@ update msg m =
             (Ready { s | solved = solved, attempts = s.attempts + 1 }, Cmd.none)
         
 
-    Select idx -> case m of
+    Select selected -> case m of
         Loading -> (m, Cmd.none)
-        Ready s -> ( Ready { s | selected = idx }, Cmd.none)
+        Ready s -> ( Ready { s | selected = selected }, Cmd.none)
 
     ToggleHardMode checked -> case m of
         Loading -> ( Loading
@@ -139,27 +147,74 @@ onKeyDown s op =
         Clear -> onKeyDown (onKeyDownInner s Nothing) Left
         Set letter -> onKeyDown (onKeyDownInner s (Just letter)) Right
         Left ->
-            case getByIdx (s.selected.idx - 1) s.words of
-                Nothing -> s
-                Just l -> { s | selected = l}
+            case s.selected of
+                ProblemLetter selected ->
+                    getByIdx (selected.idx - 1) s.words
+                        |> Maybe.map (\l_ -> { s | selected = ProblemLetter l_ })
+                        |> Maybe.withDefault s
+                TableLetter selected ->
+                    s.table
+                        |> Maybe.map (\t -> [{ letters = t.mappings }])
+                        |> Maybe.andThen (getByIdx (selected.idx - 1))
+                        |> Maybe.map (\l_ -> { s | selected = TableLetter l_ })
+                        |> Maybe.withDefault s
         Right ->
-            case getByIdx (s.selected.idx + 1) s.words of
-                Nothing -> s
-                Just l -> { s | selected = l}
+            case s.selected of
+                ProblemLetter selected ->
+                    getByIdx (selected.idx + 1) s.words
+                        |> Maybe.map (\l_ -> { s | selected = ProblemLetter l_ })
+                        |> Maybe.withDefault s
+                TableLetter selected ->
+                    s.table
+                        |> Maybe.map (\t -> [{ letters = t.mappings }])
+                        |> Maybe.andThen (getByIdx (selected.idx + 1))
+                        |> Maybe.map (\l_ -> { s | selected = TableLetter l_ })
+                        |> Maybe.withDefault s
 
 onKeyDownInner : ReadyState -> Maybe String -> ReadyState
 onKeyDownInner s guess_ =
     let
-        setIfMatch : Letter -> Letter
-        setIfMatch l =
-            if s.selected.idx == l.idx then
-                l |> setGuess guess_
-            else if not s.hardMode && s.selected.group == l.group then
-                l |> setGuess guess_
-            else
-                l
+        setProblemLetterIfMatch : Letter -> Letter
+        setProblemLetterIfMatch l =
+            case s.selected of
+                ProblemLetter selected ->
+                    if selected.idx == l.idx then
+                        l |> setGuess guess_
+                    else if not s.hardMode && selected.group == l.group then
+                        l |> setGuess guess_
+                    else
+                        l
+                TableLetter selected ->
+                    if not s.hardMode && selected.group == l.group then
+                        l |> setGuess guess_
+                    else
+                        l
+
+        setTableLetterIfMatch : Letter -> Letter
+        setTableLetterIfMatch l =
+            case s.selected of
+                ProblemLetter selected ->
+                    if not s.hardMode && selected.group == l.group then
+                        l |> setGuess guess_
+                    else
+                        l
+                TableLetter selected ->
+                    if selected.idx == l.idx then
+                        l |> setGuess guess_
+                    else if not s.hardMode && selected.group == l.group then
+                        l |> setGuess guess_
+                    else
+                        l
+        
+        words_ = mutate setProblemLetterIfMatch s.words
+        table_ = s.table
+            |> Maybe.andThen (\t ->
+                mutate setTableLetterIfMatch [{ letters = t.mappings }]
+                |> List.head
+                |> Maybe.map (\w ->
+                    { mappings = w.letters, frequencies = t.frequencies }))
     in
-    {s | words = mutate setIfMatch s.words }
+    {s | words = words_, table = table_ }
 
 toKeyOp : Int -> KeyOp
 toKeyOp val =
@@ -190,6 +245,7 @@ viewMain s =
         , Html.div [ Attrs.class "topContainer"]
             [ Html.div [ Attrs.class "instructionsContainer" ] [ Html.text s.instructions ]
             , Html.div [ Attrs.class "problemContainer" ] (s.words |> List.map (viewWord s))
+            , Html.div [ Attrs.class "frequencyContainer" ] [ viewFrequencyTable s ]
             , Html.div [ Attrs.class "btnContainer" ] (viewButtons s)
             , Html.div [ Attrs.class "infoContainer" ] (viewInfo s)
             ]
@@ -227,24 +283,92 @@ viewLetter : ReadyState -> Letter -> Html Msg
 viewLetter s l =
     let
         selectedClass =
-            if s.selected.idx == l.idx then
-                "selected"
-            else if not s.hardMode && s.selected.group == l.group then
-                "ingroup"
-            else
-                ""
+            case s.selected of
+                ProblemLetter selected ->
+                    if selected.idx == l.idx then
+                        "selected"
+                    else if not s.hardMode && selected.group == l.group then
+                        "ingroup"
+                    else
+                        ""
+                TableLetter selected ->
+                    if not s.hardMode && selected.group == l.group then
+                        "ingroup"
+                    else
+                        ""
     in
     Html.td []
         [ Html.div [ Attrs.class "letterContainer"]
             [ Html.div
                 [ Attrs.class "input"
                 , Attrs.class selectedClass
-                , Select l |> Html.Events.onClick
+                , Select (ProblemLetter l) |> Html.Events.onClick
                 ]
                 [ l.guess |> Maybe.withDefault "" |> Html.text ]
             , Html.div [ Attrs.class "cipherText" ] [ Html.text l.cipher ]
             ]
         ]
+
+viewFrequencyTable : ReadyState -> Html Msg
+viewFrequencyTable s =
+    case s.table of
+        Nothing -> Html.div [] []
+        Just t ->
+            let
+                topRow = t.mappings |> List.map (\l ->
+                    Html.td
+                        [ Attrs.class "pt"]
+                        [ Html.text l.cipher])
+
+                midRow = t.mappings |> List.map (\l ->
+                    Html.td
+                        []
+                        [DictEx.getOrZero l.cipher t.frequencies.cipher
+                            |> String.fromInt
+                            |> Html.text])
+
+                botRow = t.mappings |> List.map (\l ->
+                    let
+                        selectedClass =
+                            case s.selected of
+                                ProblemLetter selected ->
+                                    if not s.hardMode && selected.group == l.group then
+                                        "ingroup"
+                                    else
+                                        ""
+                                TableLetter selected ->
+                                    if selected.idx == l.idx then
+                                        "selected"
+                                    else if not s.hardMode && selected.group == l.group then
+                                        "ingroup"
+                                    else
+                                        ""
+                    in
+                    Html.td
+                        [ Select (TableLetter l) |> Html.Events.onClick ]
+                        [ Html.div
+                            [ Attrs.class "input", Attrs.class selectedClass ]
+                            [ Maybe.withDefault "" l.guess |> Html.text ]
+                        ])
+            in
+            Html.div
+                []
+                [ Html.table
+                    []
+                    [ Html.tbody
+                        []
+                        [ Html.tr
+                            []
+                            ((Html.td [Attrs.class "topLeftCell"] []) :: topRow)
+                        , Html.tr
+                            []
+                            ((Html.td [] [Html.text "Frequency"]) :: midRow)
+                        , Html.tr
+                            []
+                            ((Html.td [] [ Html.text "Replacement"]) :: botRow)
+                        ]
+                    ]
+                ]
 
 viewButtons : ReadyState -> List (Html Msg)
 viewButtons s =

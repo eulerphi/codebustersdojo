@@ -21,6 +21,7 @@ createProblem randomInput words =
     , instructions =
         "Affine (A = " ++ (String.fromInt params.a) ++ ", B = " ++ (String.fromInt params.b) ++ ")"
     , words = words |> List.map (\w -> { letters = w |> List.map (encryptLetter params) })
+    , table = Nothing
     }
 
 type alias Params = { a : Int, b : Int }

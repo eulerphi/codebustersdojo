@@ -14,6 +14,7 @@ createProblem randomInput words =
     { cipherType = Caesar
     , instructions = "Caesar"
     , words = words |> List.map (\w -> { letters = w |> List.map (encryptLetter offset) })
+    , table = Nothing
     }
 
 encryptLetter : Int -> Token -> Letter

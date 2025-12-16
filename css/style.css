@@ -27,7 +27,38 @@ button {
     font-size: 18px;
     margin-top: 3px;
     text-align: center;
-    text-transform: capitalize;
+    text-transform: uppercase;
+}
+
+.frequencyContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.frequencyContainer table {
+    background-color: transparent;
+    border-collapse: collapse !important;
+}
+
+.frequencyContainer .topLeftCell {
+    background-color: transparent;
+    border-left: 1px solid transparent;
+    border-top: 1px solid transparent;
+}
+
+.frequencyContainer td {
+    background-color: rgba(255,255,255,0.5);
+    border: 1px solid gray;
+    padding: 3px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.frequencyContainer .pt {
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
 .infoContainer {
@@ -90,7 +121,7 @@ main {
     color: white;
 }
 
-table {
+.problemContainer table {
     border-spacing: 5px 2px;
     background-color: rgba(255,255,255,0.5);
     border: 1px solid gray;

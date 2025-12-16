@@ -16,6 +16,7 @@ createProblem randomInput words =
     { cipherType = Porta
     , instructions = "Porta (keyword = " ++ (Keyword.toStr params.k) ++ ")"
     , words = words |> List.map (\w -> { letters = w |> List.map (encryptLetter params) })
+    , table = Nothing
     }
 
 encryptLetter : Params -> Token -> Letter

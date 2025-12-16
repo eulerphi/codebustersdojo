@@ -18,7 +18,9 @@ createProblem problemInput randomInput =
     let
         fn = getCreateProblemFn problemInput.cipherType randomInput
 
-        q = if problemInput.hardMode then
+        q = if problemInput.hardMode
+            || problemInput.cipherType == Aristocrat
+            || problemInput.cipherType == AristocratK1 then
                 randomInput.a |> Data.randomLongQuote |> Token.tokenize
             else
                 randomInput.a |> Data.randomQuote |> Token.tokenize
@@ -31,6 +33,7 @@ getCreateProblemFn cipher randomInput =
         RandomCipher -> randomCreateProblemFn randomInput
         Affine -> Affine.createProblem
         Aristocrat -> Aristocrat.createProblem
+        AristocratK1 -> Aristocrat.createK1Problem
         Atbash -> Atbash.createProblem
         Baconian -> Baconian.createProblem
         Caesar -> Caesar.createProblem
