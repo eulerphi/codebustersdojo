@@ -84,7 +84,13 @@ update msg m =
     Reset -> case m of
         Loading -> (m, Cmd.none)
         Ready s ->
-            (Ready { s | words = mutate clearGuess s.words }, Cmd.none)
+            let
+                table_ = s.table
+                    |> Maybe.map (\t -> { t | mappings = mutateLetters clearGuess t.mappings })
+
+                words_ = mutate clearGuess s.words
+            in
+            (Ready { s | table = table_, words = words_ }, Cmd.none)
 
     KeyDown code -> case m of
         Loading -> (m, Cmd.none)

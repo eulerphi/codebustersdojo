@@ -85,7 +85,11 @@ mutate fn words =
 
 mutateWord : (LetterData -> LetterData) -> Word -> Word
 mutateWord fn w =
-    { w | letters = w.letters |> List.map (mutateLetter fn) }
+    { w | letters = mutateLetters fn w.letters }
+
+mutateLetters : (LetterData -> LetterData) -> List Letter -> List Letter
+mutateLetters fn ls =
+    ls |> List.map (mutateLetter fn)
 
 mutateLetter : (LetterData -> LetterData) -> Letter -> Letter
 mutateLetter fn l =

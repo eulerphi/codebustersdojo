@@ -54,7 +54,7 @@ keywords =
         , "Base", "Batch", "Bind", "Blob", "Block", "Cipher", "Close", "Cloud", "Combo"
         , "Comp", "Core", "Crc", "Curve", "Diffie", "Digest", "Diff", "ECC", "End", "Engage"
         , "Equal", "Evt", "Flow", "Func", "Gamma", "Gen", "Hand", "Head", "Hex"
-        , "Info", "Input", "Inte", "Ip", "Item", "Join", "Jump", "Kb", "Lck", "Lead", "Left"
+        , "Info", "Input", "Ip", "Item", "Join", "Jump", "Kb", "Lck", "Lead", "Left"
         , "List", "Lock", "Mask", "Max", "Min", "Mix", "Msgid", "Net", "New", "Next", "Node"
         , "Open", "Output", "Pair", "Param", "Part", "Path", "Perm", "Pin", "Post", "Priv"
         , "Proc", "Prot", "Prng", "Psk", "Pto", "Rand", "Recv", "Reg", "Rem", "Rnd", "Root"
